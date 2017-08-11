@@ -9,6 +9,7 @@
 
 #include "path_settings.h"
 #include "base64.h"
+#include <iostream>
 
 #define DEFAULT_ERROR Error(Error::Code::NoError, std::string());
 
@@ -59,9 +60,13 @@ Error LoginManager::RegisterUser(const HttpConnectionPtr connection)
   //publicKey_ = std::make_unique<OpenSSL_RSA_CryptoProvider>(crypto.first->str_key(), true);
   //privateKey_ = std::make_unique<OpenSSL_RSA_CryptoProvider>(crypto.second->str_key(), false);
 
-  Error error = TalkWithServer(c_send_key_request, c_register_request, crypto_.first->str_key());
-  if (error.code != Error::Code::NoError)
-	  return error;
+  // private, public
+
+  Error error = TalkWithServer(c_send_key_request, c_register_request, crypto_.second->str_key());
+  if (error.code != Error::Code::NoError) {
+      logger_(SL_ERROR) << error.message;
+      return error;
+  }
 
   userUuid_ = error.message;
   WriteLoginInfo();
@@ -95,13 +100,14 @@ Error LoginManager::TalkWithServer(const std::string & firstRequestName, const s
 		return error;
 
 	std::string serverString = jsonPt.get<std::string>(c_server_string);
-    std::string clientString = base64::base64_encode(crypto_.second->decrypt_from_b64(base64::base64_decode(jsonPt.get<std::string>(c_client_string))));
+    std::string clientString = base64::base64_encode(crypto_.first->decrypt_from_b64(base64::base64_decode(jsonPt.get<std::string>(c_client_string))));
 
 	httpBuffer_.clear();
 	jsonPt.clear();
 
 	error = SendRequestProccess(secondRequestName,
-	                            { { c_client_string, clientString },{ c_server_string, serverString } },
+                                { { c_client_string, clientString },
+                                  { c_server_string, serverString } },
 	                            { },
 		                        jsonPt);
 	if (error.code != Error::Code::NoError)
@@ -149,6 +155,7 @@ Error LoginManager::PrepareHttpRequest(const std::map<std::string, std::string> 
     return Error(Error::Code::RegistationError, std::string(jsonWriteErrorMessage));
   }
   std::string resultString = oss.str();
+  std::cout << resultString << std::endl;
   std::copy(resultString.begin(), resultString.end(), std::back_inserter(httpRequestData));
   return DEFAULT_ERROR;
 }

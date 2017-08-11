@@ -53,7 +53,8 @@ int main(int argc, char *argv[]) {
   std::thread coreThread(runcore, std::ref(core));
   try
   {
-    dispatcher.RegisterUser("https://volt.trempoltsev.ru", regCallback);
+    //dispatcher.RegisterUser("https://volt.trempoltsev.ru", regCallback);
+      dispatcher.RegisterUser("http://192.168.43.53:8080", regCallback);
   }
   catch (std::exception & ex) {
       std::cout << ex.what();
