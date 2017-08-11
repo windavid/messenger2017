@@ -58,7 +58,7 @@ namespace core {
         }
     }
 
-    void ContactManager::LoadContactList() {
+    void ContactManager::LoadOffline() {
         std::string managerPath = GetManagerPath("contacts");
         std::string filename(managerPath + contactListFileName);
 
@@ -85,6 +85,43 @@ namespace core {
             // file does not exist!!!
             // write a message to a log
         }
+    }
+    void ContactManager::UniversalCallback(PerformResult result_in, HttpResponsePtr&& response_in,
+                                           PerformResult &result_out, HttpResponsePtr& response_out) {
+        result_out = result_in;
+        response_out = std::move(response_in);
+        hasResponse_.notify_one();
+    }
+const int TIMEOUT = 1000;
+
+    void ContactManager::LoadOnline(HttpConnectionPtr connection) {
+        PerformResult result;
+        HttpResponsePtr response;
+        std::string jsonSendKey;
+        std::vector<char> responseData(jsonSendKey.begin(), jsonSendKey.end());
+
+        try {
+            std::unique_lock<std::mutex> lockSendRequest(mutex_);
+            connection.get()->perform({"/dialog/list", std::chrono::milliseconds(TIMEOUT)},
+                                      responseData, httpBuffer_,
+                                      std::bind(&ContactManager::UniversalCallback, this,
+                                                std::placeholders::_1, std::placeholders::_2,
+                                                std::ref(result), std::ref(response)));
+        }
+        catch (std::exception& ex) {
+
+        }
+    }
+
+    void ContactManager::LoadContactList(HttpConnectionPtr connection) {
+
+        if (connection == nullptr) {
+            LoadOffline();
+        }
+        else {
+            LoadOnline(connection);
+        }
+
     }
 
     const ContactManager::ContactList &ContactManager::GetContactList() const {
