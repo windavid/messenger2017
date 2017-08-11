@@ -21,6 +21,7 @@ set(HEADERS
     include/login_manager.h
     include/path_settings.h
     include/jobtype.h
+    include/file_manager.h
 
     ../shared_client/chat.h
     ../shared_client/handlers.h
@@ -52,6 +53,7 @@ set(SOURCES
     src/config.cpp
     src/login_manager.cpp
     src/path_settings.cpp
+    src/file_manager.cpp
 
     ../../shared/src/safe_log.cpp
     ../../shared/src/http_client.cpp
