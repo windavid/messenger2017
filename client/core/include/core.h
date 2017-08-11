@@ -9,6 +9,7 @@
 #include "contact_manager.h"
 #include "message.h"
 #include "message_manager.h"
+#include "file_manager.h"
 
 #include "http_client.h"
 #include "http_connection.h"
@@ -67,6 +68,7 @@ namespace core {
         std::shared_ptr<ContactManager> contactManager_;
         std::shared_ptr<LoginManager> loginManager_;
         std::shared_ptr<MessageManager> messageManager_;
+        std::shared_ptr<FileManager> fileManager_;
 
         // map of availible servers
         std::map<m2::Uuid, std::string> serversMap_;

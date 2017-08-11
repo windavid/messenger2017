@@ -14,6 +14,7 @@ Core::Core() : logger_(GetManagerPath("logs").append("core.log")) {
     contactManager_ = std::make_shared<ContactManager>();
     messageManager_ = std::make_shared<MessageManager>();
     loginManager_ = std::make_shared<LoginManager>();
+    fileManager_ = std::make_shared<FileManager>();
 
     std::ifstream serverFileStream(chosenFilePath);
     if (serverFileStream.is_open()) {

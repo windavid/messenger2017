@@ -3,6 +3,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/foreach.hpp>
 #include <path_settings.h>
 #include <fstream>
 
@@ -19,14 +20,14 @@ FileManager::FileManager()
     std::fstream file(managerFileName, std::ios_base::out |
                                        std::ios_base::app);
 
-    if (!file) {                        // If config file doesn't exist
+    file.seekg(0, std::ios::end);
+    if (file.tellg() == 0) {
         file.close();
         InitJsonFile(managerFileName);
     } else {
         file.close();
         ReadFoldersPath(managerFileName);
     }
-
 }
 
 const std::string FileManager::GetStandartFilePath(m2::core::FileManager::FileType type)
@@ -42,7 +43,7 @@ const std::string FileManager::GetStandartFilePath(m2::core::FileManager::FileTy
     downloadFolderPath = getenv("HOME");
 #endif
 
-    downloadFolderPath.append(del).append("Downloads").append("m2 files");
+    downloadFolderPath.append(del).append("Downloads").append(del).append("m2 files");
     switch (type) {
     case PIC:
         downloadFolderPath.append(del).append("Pictures");
@@ -88,7 +89,7 @@ void FileManager::InitJsonFile(std::string &fileName)
         fileTree.add_child("standart_path", standartPath);
         write_json(stream, fileTree);
     } catch (std::exception &ex) {
-        std::cerr << "Alarm! Initing exeption: " << ex.what() << std::endl;
+        std::cerr << "Alarm! Initing exception: " << ex.what() << std::endl;
     }
 
     stream.close();
@@ -96,7 +97,26 @@ void FileManager::InitJsonFile(std::string &fileName)
 
 void FileManager::ReadFoldersPath(std::string &fileName)
 {
+    std::ifstream stream(fileName);
 
+    picDownloadFolder_.clear();
+    audioDownloadFolder_.clear();
+    videoDownloadFolder_.clear();
+    docDownloadFolder_.clear();
+
+    try {
+        ptree fileTree;
+
+        read_json(stream, fileTree);
+
+        picDownloadFolder_ = fileTree.get<std::string>("standart_path.pic");
+        audioDownloadFolder_ = fileTree.get<std::string>("standart_path.audio");
+        videoDownloadFolder_ = fileTree.get<std::string>("standart_path.video");
+        docDownloadFolder_ = fileTree.get<std::string>("standart_path.doc");
+
+    } catch (std::exception &ex) {
+        std::cerr << "Alarm! Reading exception: " << ex.what() << std::endl;
+    }
 }
 
 }
