@@ -10,7 +10,7 @@
 #include "path_settings.h"
 #include "base64.h"
 
-#define DEFAULT_ERROR Error(Error::Code::NoError, std::string());
+#define NO_ERROR Error(Error::Code::NoError, std::string());
 
 //int definition
 const int KEYSIZE = 2048;
@@ -22,7 +22,6 @@ const std::string c_client_string = "client_string";
 const std::string c_uuid_string = "uuid";
 
 const std::string c_server_field = "server_domain";
-const std::string c_user_uuid_field = "user_uuid";
 const std::string c_private_key_field = "private_key";
 const std::string c_public_key_field = "public_key";
 const std::string c_error_text_field = "error_msg";
@@ -31,9 +30,10 @@ const std::string c_error_text_field = "error_msg";
 const std::string c_write_json_error = "some error text";
 
 //request names
-const std::string c_send_key_request = "/user/sendKey";
+const std::string c_send_key_request = "/user/register/sendKey";
 const std::string c_register_request = "/user/register";
-
+const std::string c_send_auth_uuid_request = "/usr/auth/sendUuid";
+const std::string c_auth_request = "/usr/auth";
 //using namspaces
 using namespace m2::core;
 using namespace  m2::crypto::common;
@@ -59,36 +59,29 @@ Error LoginManager::RegisterUser(const HttpConnectionPtr connection)
   //publicKey_ = std::make_unique<OpenSSL_RSA_CryptoProvider>(crypto.first->str_key(), true);
   //privateKey_ = std::make_unique<OpenSSL_RSA_CryptoProvider>(crypto.second->str_key(), false);
 
-  Error error = TalkWithServer(c_send_key_request, c_register_request, crypto_.first->str_key());
+  Error error = TalkWithServer(c_send_key_request, c_register_request, c_public_key_field, crypto_.second->str_key());
   if (error.code != Error::Code::NoError)
-	  return error;
+      return error;
 
   userUuid_ = error.message;
   WriteLoginInfo();
 
-  return DEFAULT_ERROR;
+  return NO_ERROR;
 }
 
 Error LoginManager::Login(const HttpConnectionPtr connection) {
   currentConnection_ = connection;
-  Error error = TalkWithServer(c_send_key_request, c_register_request, userUuid_);
-  if (error.code != Error::Code::NoError)
-    return error;
-  ptree jsonPt;
-  error = SendRequestProccess(c_send_key_request,
-                                    {{c_public_key_field, userUuid_ }},
-                                    { c_server_string, c_client_string },
-                                    jsonPt);
+  Error error = TalkWithServer(c_send_key_request, c_auth_request, c_uuid_string, userUuid_);
   if (error.code != Error::Code::NoError)
     return error;
 
-  return DEFAULT_ERROR;
+  return NO_ERROR;
 }
 
-Error LoginManager::TalkWithServer(const std::string & firstRequestName, const std::string & secondRequestName, const std::string & keyStr) {
+Error LoginManager::TalkWithServer(const std::string & firstRequestName, const std::string & secondRequestName, const std::string & keyStr, const std::string valueStr) {
 	ptree jsonPt;
 	Error error = SendRequestProccess(firstRequestName,
-	{ { c_public_key_field, keyStr } },
+    { { keyStr, valueStr } },
 	{ c_server_string, c_client_string },
 		jsonPt);
 	if (error.code != Error::Code::NoError)
@@ -106,7 +99,9 @@ Error LoginManager::TalkWithServer(const std::string & firstRequestName, const s
 		                        jsonPt);
 	if (error.code != Error::Code::NoError)
 		return error;
-    return Error(Error::Code::NoError, jsonPt.get<std::string>(c_uuid_string));
+    return Error(Error::Code::NoError,
+                 jsonPt.find(c_uuid_string) != jsonPt.not_found() ?
+                   jsonPt.get<std::string>(c_uuid_string): "");
 }
 
 Error LoginManager::SendRequestProccess(const std::string & requestName, const std::map<std::string, std::string> & jsonKeyValues,
@@ -142,7 +137,7 @@ Error LoginManager::PrepareHttpRequest(const std::map<std::string, std::string> 
   }
   std::string resultString = oss.str();
   std::copy(resultString.begin(), resultString.end(), std::back_inserter(httpRequestData));
-  return DEFAULT_ERROR;
+  return NO_ERROR;
 }
 
 Error LoginManager::CheckServerResponse(const std::string & requestName, int lineNum) {
@@ -160,12 +155,12 @@ Error LoginManager::CheckServerResponse(const std::string & requestName, int lin
     else
       return error;
   }
-  return DEFAULT_ERROR;
+  return NO_ERROR;
 }
 
 Error LoginManager::CheckJsonValidFormat(const std::list<std::string>& jsonParams, int lineNum, ptree & jsonPt) {
   if (jsonParams.empty())
-    return DEFAULT_ERROR;
+    return NO_ERROR;
   std::istringstream iss(std::string(httpBuffer_.begin(), httpBuffer_.end()));
   try {
     read_json(iss, jsonPt);
@@ -187,7 +182,7 @@ Error LoginManager::CheckJsonValidFormat(const std::list<std::string>& jsonParam
     jsonParamNotFoundError.code = Error::Code::NetworkError;
     return jsonParamNotFoundError;
   }
-  return DEFAULT_ERROR;
+  return NO_ERROR;
 }
 
 std::list<std::string> LoginManager::GetServerList()
@@ -223,7 +218,7 @@ void LoginManager::ReadLoginInfo() {
           loginFile.close();
           return;
         }
-        if(pt.find(c_user_uuid_field) == pt.not_found() || pt.find(c_server_field) == pt.not_found() ||
+        if(pt.find(c_uuid_string) == pt.not_found() || pt.find(c_server_field) == pt.not_found() ||
            pt.find(c_private_key_field) == pt.not_found() || pt.find(c_public_key_field) == pt.not_found()){
           logger_(SL_ERROR) << "Login info file is corrupted";
           loginFile.close();
@@ -240,7 +235,7 @@ void LoginManager::ReadLoginInfo() {
             return;
         }
         serverDomain_ = pt.get<std::string>(c_server_field);
-        userUuid_ = pt.get<std::string>(c_user_uuid_field);
+        userUuid_ = pt.get<std::string>(c_uuid_string);
         loginFile.close();
     }
     else {
@@ -253,11 +248,11 @@ void LoginManager::WriteLoginInfo() {
     if(loginFile.is_open()) {
         ptree pt;
         pt.put(c_server_field, serverDomain_);
-        pt.put(c_user_uuid_field, userUuid_);
+        pt.put(c_uuid_string, userUuid_);
         pt.put(c_private_key_field, privateKey_->str_key());
         pt.put(c_public_key_field, publicKey_->str_key());
         serverDomain_ = pt.get<std::string>(c_server_field);
-        userUuid_ = pt.get<std::string>(c_user_uuid_field);
+        userUuid_ = pt.get<std::string>(c_uuid_string);
 
         try {
           write_json(loginFile, pt);

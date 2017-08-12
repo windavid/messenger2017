@@ -37,7 +37,7 @@ public:
   void WriteLoginInfo();
 
 private:
-  Error TalkWithServer(const std::string & firstRequestName, const std::string & secondRequestName, const std::string & keyStr);
+  Error TalkWithServer(const std::string & firstRequestName, const std::string & secondRequestName, const std::string & keyStr, const std::string valueStr);
   Error SendRequestProccess(const std::string & requestName, const std::map<std::string, std::string> & jsonKeyValues,
                             const std::list<std::string>& jsonParams, boost::property_tree::ptree & jsonPt);
 
