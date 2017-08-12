@@ -14,7 +14,7 @@ import uuid
 class ClientTest(unittest.TestCase):
     SERVER_ADDR = "192.168.43.230"
     # 43.230
-    SERVER_PORT = 8283
+    SERVER_PORT = 8282
 
     """
     INSERT NEW UUID HERE FROM self.testRegistration()
@@ -127,7 +127,33 @@ class ClientTest(unittest.TestCase):
             self.assertEqual(step_ret.status_code, requests.codes.OK)
 
     def test_user_info(self):
-        u1, u2_key = self.register()
+        u1, u1_key = self.register()
         u2, u2_key = self.register()
+        sess1 = self.authorize(u1, u1_key)
+        sess2 = self.authorize(u2, u2_key)
+        resp = sess1.get(self.url("/user/info"), json={
+            "uuid": u2
+        })
+
+        self.assertEqual(resp.status_code, requests.codes.OK)
+
+    def test_user_dialog(self):
+        u1, u1_key = self.register()
+        u2, u2_key = self.register()
+        sess1 = self.authorize(u1, u1_key)
+        sess2 = self.authorize(u2, u2_key)
+        resp = sess1.post(self.url("/dialog/send_message"), json={
+            "udid": u2,
+            "msg": "HELLO!!"
+        })
+        self.assertEqual(resp.status_code, requests.codes.OK)
+        self.assertTrue("umid" in resp.json())
+        resp = sess1.get(self.url("/dialog/messages"), json={
+            "udid": u2,
+            "umid": resp.json()["umid"]
+        })
+        self.assertTrue("umid" in resp.json())
+
+
 
 
