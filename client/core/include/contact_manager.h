@@ -7,6 +7,7 @@
 #include <condition_variable>
 
 #include "contact.h"
+#include "error.h"
 #include "http_connection.h"
 #include "abstract_manager.h"
 

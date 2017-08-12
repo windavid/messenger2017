@@ -13,6 +13,7 @@ option(ENABLE_TESTS "Enable m2-core tests" OFF)
 set(HEADERS
     stdafx.h
 
+    include/abstract_manager.h
     include/config.h
     include/contact_manager.h
     include/core.h
@@ -42,6 +43,7 @@ set(HEADERS
 set(SOURCES
     src/stdafx.cpp
 
+    src/abstract_manager.cpp
     src/config.cpp
     src/contact_manager.cpp
     src/core.cpp
@@ -98,7 +100,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT s
 #list(APPEND CMAKE_MODULE_PATH "${M2_GLOBAL_3RD_PARTY}/cmake")
 get_filename_component(M2_GLOBAL_3RD_PARTY "${M2_GLOBAL_3RD_PARTY}/cotire-1.7.10/CMake" ABSOLUTE)
 set (CMAKE_MODULE_PATH "${M2_GLOBAL_3RD_PARTY}")
-include(cotire)
+#include(cotire)
 message(${CMAKE_MODULE_PATH})
 cotire(${PROJECT_NAME})
 

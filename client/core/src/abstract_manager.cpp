@@ -1,6 +1,7 @@
-#include "../include/abstract_manager.h"
+#include "abstract_manager.h"
 
 const int TIMEOUT = 1000;
+namespace m2 {
 
 void AbstractManager::SendRequest(const std::string & requestName, std::vector<char> & httpRequestData)
 {
@@ -18,4 +19,5 @@ void AbstractManager::PerformHandler(PerformResult result_in, HttpResponsePtr &&
 	result_out = result_in;
 	response_out = std::move(response_in);
 	hasResponse_.notify_one();
+}
 }
