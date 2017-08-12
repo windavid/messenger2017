@@ -14,7 +14,6 @@ option(ENABLE_TESTS "Enable m2-core tests" OFF)
 set(HEADERS
     stdafx.h
 
-    include/config.h
     include/contact_manager.h
     include/core.h
     include/core_dispatcher.h
@@ -43,18 +42,13 @@ set(HEADERS
 set(SOURCES
     src/stdafx.cpp
 
-    src/config.cpp
     src/contact_manager.cpp
     src/core.cpp
     src/core_dispatcher.cpp
-
     src/guid.cpp
     src/error.cpp
     src/login_manager.cpp
     src/message_manager.cpp
-    src/guid.cpp
-    src/config.cpp
-    src/login_manager.cpp
     src/path_settings.cpp
 
     ../../shared/src/safe_log.cpp
