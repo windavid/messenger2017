@@ -1,7 +1,7 @@
 #include <cassert>
 #include <future>
 
-#include "../include/http_client.h"
+#include <http_client.h>
 
 namespace
 {
@@ -98,7 +98,7 @@ int m2::timerCallback(CURLM* curlMulti, Milliseconds timeout, void* clientPtr)
     return 0;
 }
 
-void m2::eventCallback(int socket, short kind, void* contextPtr)
+void m2::eventCallback(int socket, short kind, void *contextPtr)
 {
     const auto context = static_cast<HttpClient::Context*>(contextPtr);
 
@@ -354,7 +354,7 @@ void m2::HttpClient::Context::update(curl_socket_t socket, int action)
     if (action & CURL_POLL_OUT)
         kind |= EV_WRITE;
 
-    event_ = event_new(client_->eventBase_, socket_, kind, eventCallback, this);
+    event_ = event_new(client_->eventBase_, socket_, kind, reinterpret_cast<event_callback_fn>(eventCallback), this);
     event_add(event_, NULL);
 }
 

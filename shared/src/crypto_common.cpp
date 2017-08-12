@@ -1,7 +1,7 @@
 //
 // Created by lol on 8/5/2017.
 //
-#include "../include/crypto_common.h"
+#include <crypto_common.h>
 #include <openssl/err.h>
 
 namespace m2
@@ -24,8 +24,8 @@ namespace common
 
     }
 
-    std::string OpenSSL_CryptoError::makeOpenSSLErrString(bool prefix) {
-        std::string err = prefix ? "Error occured in OpenSSL context: " : "";
+    std::string OpenSSL_CryptoError::   makeOpenSSLErrString(bool prefix) {
+            std::string err = prefix ? "Error occured in OpenSSL context: " : "";
         char buf[1024];
         auto code = ERR_get_error();
         ERR_error_string(code, buf);

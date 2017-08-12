@@ -8,8 +8,8 @@
 #include "message.h"
 
 #include <functional>
-#include <memory>
 #include <list>
+#include <memory>
 
 namespace m2 {
 
@@ -32,36 +32,38 @@ namespace m2 {
 //};
 
 namespace core {
-    class CoreDispatcher final {
-    public:
-        CoreDispatcher() = default;
-        CoreDispatcher(CoreDispatcher &) = delete;
-        CoreDispatcher &operator=(CoreDispatcher &) = delete;
+class CoreDispatcher final {
+public:
+  CoreDispatcher() = default;
+  CoreDispatcher(CoreDispatcher &) = delete;
+  CoreDispatcher &operator=(CoreDispatcher &) = delete;
 
-        CoreDispatcher(CoreDispatcher &&) = delete;
-        CoreDispatcher &operator=(CoreDispatcher &&) = delete;
+  CoreDispatcher(CoreDispatcher &&) = delete;
+  CoreDispatcher &operator=(CoreDispatcher &&) = delete;
 
-        void Login(LoginHandler handler);
+  void Login(LoginHandler handler);
+  void RegisterUser(const std::string &serverDomain, RegisterHandler &handler);
 
-        void RegisterUser(RegisterHandler handler);
-   //     void GetServerList(ServerSetHandler handler);
+  bool HasServer();
+  std::string GetServerDomain();
+  std::list<std::string> GetServerList();
 
-        void RegisterUser(const std::string & serverDomain, RegisterHandler handler);
+  std::string GetUserUuid();
 
-        bool HasServer();
-        std::list<std::string> GetServerList();
+  // messages
+  std::vector<Message>
+  GetMessageStory(const std::string &id /*, MessageStoryHandler handler*/);
 
+  // chats
+  std::unordered_map<int, Chat> GetChats();
 
-        // messages
-        void GetMessageStory(const std::string &id, MessageStoryHandler handler);
+  // contacts
+  std::vector<Contact> GetContacts();
 
-        // chats
-        void GetChats(ChatsHandler handler);
+  void stopCore();
 
-        void stopCore();
+  std::shared_ptr<Core> core_;
+};
 
-        std::shared_ptr<Core> core_;
-    };
-
-}  // core
-}  // m2
+} // core
+} // m2

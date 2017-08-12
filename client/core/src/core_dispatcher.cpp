@@ -13,77 +13,89 @@
 namespace m2 {
 namespace core {
 
-    using namespace safelog;
+using namespace safelog;
 
-    void CoreDispatcher::stopCore() { core_->Stop(); }
-    void CoreDispatcher::Login(LoginHandler handler) {
-        JobType job = [handler](Core &core) {
-            if (core.GetHttpConnection() == nullptr) {
-                if (core.InitHttpConnection()) {
-                    handler.onError(Error(Error::Code::NetworkError, "Connection error"));
-                    return;
-                }
-            }
-            auto uuid = core.GetLoginManager()->Login(core.GetHttpConnection());
-            if (!uuid.empty()) {
-                handler.onCompletion(uuid);
-            } else {
-                handler.onError(Error(Error::Code::LoginError, "Login error"));
-            }
-        };
-        core_->PushJob(job, "Login");
+std::vector<Message>
+CoreDispatcher::GetMessageStory(const std::string &idStr /*,
+                                     MessageStoryHandler handler*/) {
+  // some uber-thread stuff (begin)
+
+  // int id =
+  // FIXME: int instead of int! we need string --> int conversion
+  int id = std::stoi(idStr);
+
+  //  if (core_->GetMessageManager()->ChatExists(id)) {
+  std::vector<Message> story = core_->GetMessageManager()->GetMessageStory(id);
+  return story;
+  //    handler.onCompletion(story);
+  //  } else
+  //    handler.onError();
+  // some uber-thread stuff  (end)
+}
+
+void CoreDispatcher::stopCore() { core_->Stop(); }
+void CoreDispatcher::Login(LoginHandler handler) {
+  JobType job = std::make_shared<JobFunc>([handler](Core &core) {
+    if (core.GetHttpConnection() == nullptr) {
+      if (core.InitHttpConnection()) {
+        handler.onError(Error(Error::Code::NetworkError, "Connection error"));
+        return;
+      }
     }
-
-    // void CoreDispatcher::GetServerList(ServerSetHandler handler) {
-    //     JobType job = [handler](Core &core) {
-    //         std::list<std::string> servers = core.GetLoginManager()->GetServerList();
-    //         if (servers.empty()) {
-    //             handler.onCompletion(servers);
-    //         } else {
-    //             ;
-    //             handler.onError();
-    //         }
-    //     };
-    //     std::cout << "        push job get server list" << std::endl;
-    //     core_->PushJob(job);
-    // }
-
-    void CoreDispatcher::RegisterUser(const std::string &serverDomain, RegisterHandler handler) {
-        JobType job = [serverDomain, handler](Core &core) {
-            if (!core.InitHttpConnection(serverDomain)) {
-                handler.onError(Error(Error::Code::NetworkError, "Connection error"));
-                return;
-            }
-            m2::Error ret = core.GetLoginManager()->RegisterUser(core.GetHttpConnection());
-            if (ret.code == m2::Error::Code::NoError) {
-                handler.onCompletion();
-            } else {
-                handler.onError(std::move(ret));
-            }
-        };
-        std::cout << "        push job" << std::endl;
-        core_->PushJob(job, "Registation");
+    Error loginError = core.GetLoginManager()->Login(core.GetHttpConnection());
+    if (loginError.code == Error::Code::NoError) {
+      handler.onCompletion(core.GetLoginManager()->GetUserUuid());
+    } else {
+      // FIXME !!! onError
+      // handler.onError(std::move(loginError));
+      handler.onCompletion("111");
     }
+  });
+  core_->PushJob(job, "Login");
+}
 
-    bool CoreDispatcher::HasServer() { return core_->HasChosenServer(); }
-
-    std::list<std::string> CoreDispatcher::GetServerList() {
-        return core_->GetLoginManager()->GetServerList();
+void CoreDispatcher::RegisterUser(const std::string &serverDomain,
+                                  RegisterHandler &handler) {
+  JobType job = std::make_shared<JobFunc>([serverDomain, &handler](Core &core) {
+    if (!core.InitHttpConnection(serverDomain)) {
+      handler.onError(Error(Error::Code::NetworkError, "Connection error"));
+      return;
     }
-
-    void CoreDispatcher::GetMessageStory(const std::string &idStr, MessageStoryHandler handler) {
-        // some uber-thread stuff (begin)
-
-        // int id =
-        // FIXME: int instead of int! we need string --> int conversion
-        int id = std::stoi(idStr);
-
-        if (core_->GetMessageManager()->ChatExists(id)) {
-            auto story = core_->GetMessageManager()->GetMessageStory(id);
-            handler.onCompletion(story);
-        } else
-            handler.onError();
-        // some uber-thread stuff  (end)
+    m2::Error ret =
+        core.GetLoginManager()->RegisterUser(core.GetHttpConnection());
+    if (ret.code == m2::Error::Code::NoError) {
+      handler.onCompletion();
+    } else {
+      // FIXME !!! onError
+      // handler.onError(std::move(ret));
+      handler.onCompletion();
     }
-}  // core
-}  // m2
+  });
+  std::cout << "        push job" << std::endl;
+  core_->PushJob(job, "Registation");
+}
+
+bool CoreDispatcher::HasServer() {
+  return !core_->GetLoginManager()->GetServerDomain().empty();
+}
+
+std::string CoreDispatcher::GetServerDomain() {
+  return core_->GetLoginManager()->GetServerDomain();
+}
+
+std::list<std::string> CoreDispatcher::GetServerList() {
+  return core_->GetLoginManager()->GetServerList();
+}
+
+std::string CoreDispatcher::GetUserUuid() { return GetUserUuid(); }
+
+std::unordered_map<int, Chat> CoreDispatcher::GetChats() {
+  return core_->GetMessageManager()->GetChats();
+}
+
+std::vector<Contact> CoreDispatcher::GetContacts() {
+  return core_->GetContactManager()->GetContactList();
+}
+
+} // core
+} // m2
