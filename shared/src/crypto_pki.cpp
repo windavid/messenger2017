@@ -143,7 +143,18 @@ namespace common
         std::unique_ptr<unsigned char[]> buf { new unsigned char[buf_size] };
         std::unique_ptr<BIO, decltype(&BIO_free)> keybio { BIO_new(BIO_s_mem()), &BIO_free };
         std::string res;
-        RSA_print(keybio.get(), key_.get(), 0);
+        // RSA_print(keybio.get(), key_.get(), 0);
+        int code = 0;
+        if (public_) {
+            code = PEM_write_bio_RSAPublicKey(keybio.get(), key_.get());
+
+        } else {
+            code = PEM_write_bio_RSAPrivateKey(keybio.get(), key_.get(), nullptr, nullptr, 0, 0, nullptr);
+        }
+        if (!code) {
+            throw OpenSSL_CryptoError();
+        }
+
         while (BIO_read (keybio.get(), (void*)buf.get(), (int) buf_size) > 0)
             res.append((char*)buf.get());
         return res;
