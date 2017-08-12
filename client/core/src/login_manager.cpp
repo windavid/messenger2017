@@ -111,19 +111,11 @@ Error LoginManager::TalkWithServer(const std::string & firstRequestName, const s
 
 Error LoginManager::SendRequestProccess(const std::string & requestName, const std::map<std::string, std::string> & jsonKeyValues,
                                         const std::list<std::string>& jsonParams, boost::property_tree::ptree & jsonPt) {
-  PerformResult result;
-  HttpResponsePtr response;
   std::vector<char> httpRequestData;
   Error prepareError = PrepareHttpRequest(jsonKeyValues, httpRequestData, c_write_json_error);
   if(prepareError.code == Error::Code::NoError) {
-    std::unique_lock<std::mutex> lockSendKey(mutex_);
-    currentConnection_->perform({requestName, std::chrono::milliseconds(TIMEOUT)},
-                                      httpRequestData, httpBuffer_,
-                                      std::bind(&LoginManager::UniveralCallback, this,
-                                                std::placeholders::_1, std::placeholders::_2,
-                                                std::ref(result), std::ref(response)));
-    hasResponse_.wait(lockSendKey);
-    Error checkKeyError = CheckServerResponse(result, response, requestName, __LINE__);
+	SendRequest(requestName, httpRequestData);
+    Error checkKeyError = CheckServerResponse(requestName, __LINE__);
     if (checkKeyError.code != Error::Code::NoError) {
       return checkKeyError;
     }
@@ -153,19 +145,13 @@ Error LoginManager::PrepareHttpRequest(const std::map<std::string, std::string> 
   return DEFAULT_ERROR;
 }
 
-void LoginManager::UniveralCallback(PerformResult result_in, HttpResponsePtr && response_in, PerformResult &result_out, HttpResponsePtr & response_out) {
-    result_out = result_in;
-    response_out = std::move(response_in);
-    hasResponse_.notify_one();
-}
-
-Error LoginManager::CheckServerResponse(PerformResult & result, HttpResponsePtr & response, const std::string & requestName, int lineNum) {
-  if (result == PerformResult::NetworkError)
+Error LoginManager::CheckServerResponse(const std::string & requestName, int lineNum) {
+  if (result_ == PerformResult::NetworkError)
   {
     logger_(SL_ERROR) << "Network Error in RegisterUser on line=" + std::to_string(lineNum);
     return Error(Error::Code::NetworkError, std::string("the \"" + requestName +"\" request failed"));
   }
-  if (response->code != 200)
+  if (response_->code != 200)
   {
     ptree errorPt;
     Error error = CheckJsonValidFormat({c_error_text_field}, lineNum, errorPt);

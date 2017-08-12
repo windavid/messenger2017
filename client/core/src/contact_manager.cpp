@@ -7,6 +7,11 @@
 #include "contact_manager.h"
 #include "path_settings.h"
 
+const std::string c_dialog_list = "/dialog/list";
+const std::string c_dialogues_field = "dialogues";
+const std::string c_uuid = "udid";
+const std::string c_last_umid = "last_umid";
+
 namespace m2 {
 namespace core {
 
@@ -86,31 +91,11 @@ namespace core {
             // write a message to a log
         }
     }
-    void ContactManager::UniversalCallback(PerformResult result_in, HttpResponsePtr&& response_in,
-                                           PerformResult &result_out, HttpResponsePtr& response_out) {
-        result_out = result_in;
-        response_out = std::move(response_in);
-        hasResponse_.notify_one();
-    }
-const int TIMEOUT = 1000;
 
     void ContactManager::LoadOnline(HttpConnectionPtr connection) {
-        PerformResult result;
-        HttpResponsePtr response;
-        std::string jsonSendKey;
-        std::vector<char> responseData(jsonSendKey.begin(), jsonSendKey.end());
-
-        try {
-            std::unique_lock<std::mutex> lockSendRequest(mutex_);
-            connection.get()->perform({"/dialog/list", std::chrono::milliseconds(TIMEOUT)},
-                                      responseData, httpBuffer_,
-                                      std::bind(&ContactManager::UniversalCallback, this,
-                                                std::placeholders::_1, std::placeholders::_2,
-                                                std::ref(result), std::ref(response)));
-        }
-        catch (std::exception& ex) {
-
-        }
+		std::vector<char> httpRequestData;
+		SendRequest(c_dialog_list, httpRequestData);
+		CreateContactListFromPtree();
     }
 
     void ContactManager::LoadContactList(HttpConnectionPtr connection) {
@@ -127,6 +112,22 @@ const int TIMEOUT = 1000;
     const ContactManager::ContactList &ContactManager::GetContactList() const {
         return contactList_;
     }
+
+	Error ContactManager::CreateContactListFromPtree() {
+		ptree jsonPt;
+		std::istringstream iss(std::string(httpBuffer_.begin(), httpBuffer_.end()));
+		try {
+			read_json(iss, jsonPt);
+		}
+		catch (json_parser_error & jsonEx) {
+			return Error(Error::Code::JsonError, "kek lol arbidol");
+		}
+		for (auto & jsonItem : jsonPt.get_child(c_dialogues_field)) {
+			ContactBuilder cb;
+			cb.uuid = jsonItem.second.get<std::string>(c_uuid);
+			contactList_.push_back(Contact(cb));
+		}
+	}
 
 }  // core
 }  // m2

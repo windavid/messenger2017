@@ -8,6 +8,7 @@
 
 #include "contact.h"
 #include "http_connection.h"
+#include "abstract_manager.h"
 
 namespace m2 {
 namespace core {
@@ -39,7 +40,7 @@ namespace core {
     //        std::string avatar_;
     //    };
 
-    class ContactManager {
+    class ContactManager : AbstractManager {
     public:
         using ContactList = std::vector<Contact>;
 
@@ -48,15 +49,13 @@ namespace core {
         void AddContact(const std::string &uuid, const std::string &nickname);
 
     private:
-         void UniversalCallback(PerformResult result_in, HttpResponsePtr&& response_in,
-                                PerformResult &result_out, HttpResponsePtr& response_out);
         void SaveContactList();
         void LoadOffline();
         void LoadOnline(HttpConnectionPtr connection);
         ContactList contactList_;
-        std::mutex mutex_;
-        std::vector<char> httpBuffer_;
-        std::condition_variable hasResponse_;
+
+		Error CheckServerResponse();
+		Error CreateContactListFromPtree();
     };
 
 }  // core
