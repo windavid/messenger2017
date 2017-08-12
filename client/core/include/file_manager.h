@@ -17,7 +17,7 @@ namespace core {
         const std::string GetStandartFilePath(FileType type);
 
         void SaveInStandartDir();
-        void SaveInCustomDir(/*FileType type*/);
+        void SaveInCustomDir();
 
     protected:
         void InitJsonFile(std::string &fileName);
